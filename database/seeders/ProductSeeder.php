@@ -22,7 +22,8 @@ class ProductSeeder extends Seeder
                 'price' => rand(1000, 10000),
                 'image' => 'https://picsum.photos/150/150?random=' . $i,
                 'rating' => round(rand(0, 50) / 10, 1),
-                'category_id' => rand(1, 10)
+                'category_id' => rand(1, 10),
+                'brand_id' => rand(1, 10),
             ]);
         }
     }

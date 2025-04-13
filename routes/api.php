@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\ProductController;
@@ -21,6 +22,7 @@ Route::post('/signup', [LoginController::class, 'register']);
 Route::post('/login', [LoginController::class, 'submit']);
 Route::get('/products', [ProductController::class, 'getProducts']);
 Route::get('/categories', [CategoryController::class, 'getCategories']);
+Route::get('/brands', [BrandController::class, 'getBrands']);
 
 Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post('/logout', [LoginController::class, 'logout']);

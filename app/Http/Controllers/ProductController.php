@@ -10,7 +10,7 @@ class ProductController extends Controller
 {
     public function getProducts(Request $request)
     {
-        $limit = $request->input('limit', 6);
+        $limit = $request->input('limit', $request->limit);
         $page = $request->input('page', 1);
         $sort = $request->input('sort');
         $dataBy = $request->input('getBy');
@@ -19,6 +19,9 @@ class ProductController extends Controller
         switch ($dataBy) {
             case 'category':
                 $query =  Product::where('category_id', $id);
+                break;
+            case 'brand':
+                $query =  Product::where('brand_id', $id);
                 break;
             case 'product':
             default:

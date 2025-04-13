@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Brand;
 use App\Models\Category;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -16,9 +17,11 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->foreignIdFor(Category::class);
+            $table->foreignIdFor(Brand::class);
             $table->string('price');
             $table->string('image');
             $table->string('rating');
+            $table->tinyInteger('status')->default(1);
             $table->timestamps();
         });
     }
