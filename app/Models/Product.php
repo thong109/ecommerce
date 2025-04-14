@@ -14,16 +14,28 @@ class Product extends Model
         'price',
         'image',
         'rating',
-        'status'
+        'status',
+        'short_desc',
+        'description',
+        'discounted',
+        'tag',
+        'cost'
     ];
 
     public function category()
     {
-        return $this->hasOne(Category::class);
+        return $this->belongsTo(Category::class);
     }
 
     public function brand()
     {
-        return $this->hasOne(Brand::class);
+        return $this->belongsTo(Brand::class);
+    }
+
+    public function attributeValues()
+    {
+        return $this->belongsToMany(AttributeValue::class, 'product_attribute_values')
+            ->withPivot('attribute_id')
+            ->withTimestamps();
     }
 }

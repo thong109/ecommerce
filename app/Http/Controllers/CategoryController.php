@@ -17,4 +17,10 @@ class CategoryController extends Controller
 
         return response()->json($categories);
     }
+
+    public function getAttributes(Category $category)
+    {
+        $attributes = $category->attributes()->with('values')->get();
+        return response()->json($attributes);
+    }
 }

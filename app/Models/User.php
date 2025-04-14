@@ -22,7 +22,8 @@ class User extends Authenticatable
         'phone',
         'email',
         'is_admin',
-        'password'
+        'password',
+        'created_at'
     ];
 
     /**
@@ -39,5 +40,10 @@ class User extends Authenticatable
     public function user_info()
     {
         return $this->hasOne(UserInfo::class);
+    }
+
+    public function user_request()
+    {
+        return $this->hasMany(UserChangeRequest::class);
     }
 }

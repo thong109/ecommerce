@@ -18,9 +18,14 @@ return new class extends Migration
             $table->string('name');
             $table->foreignIdFor(Category::class);
             $table->foreignIdFor(Brand::class);
+            $table->string('short_desc');
+            $table->text('description');
+            $table->string('cost');
             $table->string('price');
+            $table->string('discounted');
             $table->string('image');
             $table->string('rating');
+            $table->string('tag');
             $table->tinyInteger('status')->default(1);
             $table->timestamps();
         });

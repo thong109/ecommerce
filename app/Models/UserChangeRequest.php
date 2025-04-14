@@ -5,22 +5,15 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class UserInfo extends Model
+class UserChangeRequest extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'phone',
-        'address',
-        'avatar',
-        'location',
-        'description',
-        'user_id'
-    ];
-
-    protected $hidden = [
-        'avatar_old',
-        // 'avatar_status'
+        'user_id',
+        'type',
+        'data',
+        'status'
     ];
 
     public function user()

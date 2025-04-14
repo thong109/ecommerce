@@ -19,7 +19,8 @@ return new class extends Migration
             $table->string('address')->nullable();
             $table->string('location')->nullable();
             $table->text('description')->nullable();
-            $table->string('avatar')->nullable();
+            $table->longText('avatar')->nullable();
+            $table->tinyInteger('avatar_status')->default(1);
             $table->timestamps();
         });
     }
