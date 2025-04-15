@@ -38,4 +38,9 @@ class Product extends Model
             ->withPivot('attribute_id')
             ->withTimestamps();
     }
+
+    public function product_attribute_values()
+    {
+        return $this->hasMany(ProductAttributeValue::class, 'product_id');
+    }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Commons\CodeMasters\Role;
 use App\Commons\CodeMasters\Status;
 use App\Models\User;
 use App\Models\UserChangeRequest;
@@ -75,11 +76,7 @@ class UserController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $userCurrent = $request->user();
-
-        if (!$userCurrent) {
-            return response()->json(['message' => 'Authentication.'], 404);
-        }
+        $this->checkUser($request);
 
         $userUpdate = User::find($id);
 
@@ -168,5 +165,23 @@ class UserController extends Controller
         }
 
         throw new \Exception('Invalid image format');
+    }
+
+    public function getAllUsers()
+    {
+        $users = User::where('is_admin', '!=', Role::ADMIN())->get();
+
+        return response()->json([
+            'users' => $users->load('user_info'),
+        ]);
+    }
+
+    private function checkUser(Request $request)
+    {
+        $userCurrent = $request->user();
+
+        if (!$userCurrent) {
+            return response()->json(['message' => 'Authentication.'], 404);
+        }
     }
 }

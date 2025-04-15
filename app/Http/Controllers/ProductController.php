@@ -124,4 +124,49 @@ class ProductController extends Controller
             ], 500);
         }
     }
+
+    public function getAllProducts()
+    {
+        $products = Product::with([
+            'category',
+            'brand',
+            'product_attribute_values.attribute',
+            'product_attribute_values.attributeValue'
+        ])->get();
+
+        $result = [];
+
+        foreach ($products as $product) {
+            $attributeMap = [];
+
+            foreach ($product->product_attribute_values as $pav) {
+                $attrName = $pav->attribute->name ?? null;
+                $attrValue = $pav->attributeValue->value ?? null;
+
+                if ($attrName && $attrValue) {
+                    if (!isset($attributeMap[$attrName])) {
+                        $attributeMap[$attrName] = [];
+                    }
+
+                    if (!in_array($attrValue, $attributeMap[$attrName])) {
+                        $attributeMap[$attrName][] = $attrValue;
+                    }
+                }
+            }
+
+            $result[] = [
+                'id' => $product->id,
+                'name' => $product->name,
+                'price' => $product->price,
+                'discounted' => $product->discounted,
+                'cost' => $product->cost,
+                'image' => $product->image,
+                'attributes' => $attributeMap,
+                'categoryName' => $product->category->name,
+                'brandName' => $product->brand->name,
+            ];
+        }
+
+        return response()->json($result);
+    }
 }
