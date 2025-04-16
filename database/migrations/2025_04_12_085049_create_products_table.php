@@ -21,11 +21,12 @@ return new class extends Migration
             $table->string('short_desc');
             $table->text('description');
             $table->string('cost');
-            $table->string('price');
+            $table->integer('price');
             $table->string('discounted');
             $table->string('image');
-            $table->string('rating');
+            $table->integer('rating')->default(0);
             $table->string('tag');
+            $table->integer('quantity');
             $table->tinyInteger('status')->default(1);
             $table->timestamps();
         });

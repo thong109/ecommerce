@@ -15,10 +15,10 @@ class CategorySeeder extends Seeder
     public function run(): void
     {
         $faker = Faker::create();
-        for ($i = 1; $i <= 10; $i++) {
+        for ($i = 1; $i <= 5; $i++) {
             Category::create([
                 'name' => $faker->name(),
-                'image' => 'https://picsum.photos/150/150',
+                'image' => 'https://picsum.photos/150/150' . '?random=' . $i,
             ]);
         }
     }

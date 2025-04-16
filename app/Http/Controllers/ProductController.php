@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Commons\CodeMasters\Status;
 use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Http\Request;
@@ -44,7 +45,7 @@ class ProductController extends Controller
                     break;
             }
 
-            $products = $query->where('status', 1)->paginate($limit, ['*'], 'page', $page);
+            $products = $query->where('status', Status::SHOW())->paginate($limit, ['*'], 'page', $page);
 
             return response()->json([
                 'products' => $products->items(),
@@ -123,50 +124,5 @@ class ProductController extends Controller
                 'details' => $e->getMessage()
             ], 500);
         }
-    }
-
-    public function getAllProducts()
-    {
-        $products = Product::with([
-            'category',
-            'brand',
-            'product_attribute_values.attribute',
-            'product_attribute_values.attributeValue'
-        ])->get();
-
-        $result = [];
-
-        foreach ($products as $product) {
-            $attributeMap = [];
-
-            foreach ($product->product_attribute_values as $pav) {
-                $attrName = $pav->attribute->name ?? null;
-                $attrValue = $pav->attributeValue->value ?? null;
-
-                if ($attrName && $attrValue) {
-                    if (!isset($attributeMap[$attrName])) {
-                        $attributeMap[$attrName] = [];
-                    }
-
-                    if (!in_array($attrValue, $attributeMap[$attrName])) {
-                        $attributeMap[$attrName][] = $attrValue;
-                    }
-                }
-            }
-
-            $result[] = [
-                'id' => $product->id,
-                'name' => $product->name,
-                'price' => $product->price,
-                'discounted' => $product->discounted,
-                'cost' => $product->cost,
-                'image' => $product->image,
-                'attributes' => $attributeMap,
-                'categoryName' => $product->category->name,
-                'brandName' => $product->brand->name,
-            ];
-        }
-
-        return response()->json($result);
     }
 }

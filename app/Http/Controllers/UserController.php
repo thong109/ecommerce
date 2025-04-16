@@ -167,15 +167,6 @@ class UserController extends Controller
         throw new \Exception('Invalid image format');
     }
 
-    public function getAllUsers()
-    {
-        $users = User::where('is_admin', '!=', Role::ADMIN())->get();
-
-        return response()->json([
-            'users' => $users->load('user_info'),
-        ]);
-    }
-
     private function checkUser(Request $request)
     {
         $userCurrent = $request->user();

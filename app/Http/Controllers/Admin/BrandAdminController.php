@@ -2,12 +2,10 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Commons\CodeMasters\Role;
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use Illuminate\Http\Request;
 
-class AdminController extends Controller
+class BrandAdminController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -63,14 +61,5 @@ class AdminController extends Controller
     public function destroy(string $id)
     {
         //
-    }
-
-    public function getAllUsers()
-    {
-        $users = User::where('is_admin', '!=', Role::ADMIN())->get();
-
-        return response()->json([
-            'users' => $users->load('user_info'),
-        ]);
     }
 }

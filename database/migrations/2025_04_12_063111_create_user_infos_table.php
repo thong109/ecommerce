@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('location')->nullable();
             $table->text('description')->nullable();
             $table->longText('avatar')->nullable();
+            $table->longText('avatar_old')->nullable();
             $table->tinyInteger('avatar_status')->default(1);
             $table->timestamps();
         });
