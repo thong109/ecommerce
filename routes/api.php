@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\BrandAdminController;
 use App\Http\Controllers\Admin\CategoryAdminController;
 use App\Http\Controllers\Admin\ProductAdminController;
 use App\Http\Controllers\BrandController;
@@ -38,13 +39,27 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post('/user/update/{id}', [UserController::class, 'update']);
     Route::get('/user', [UserController::class, 'me']);
     Route::post('/add-to-cart', [CartController::class, 'addToCart']);
+    Route::get('/carts/get/', [CartController::class, 'getCartItems']);
+    Route::delete('/carts/delete/{id}', [CartController::class, 'deleteItemCart']);
 
-    // Admin
+    // --------Admin--------
+
+    // Brand
+    Route::get('/brands/all', [BrandAdminController::class, 'index']);
+    Route::post('/brands/store', [BrandAdminController::class, 'store']);
+    Route::get('/brands/show/{id}', [BrandAdminController::class, 'show']);
+    Route::put('/brands/update/{id}', [BrandAdminController::class, 'update']);
+    Route::post('/brand/destroy/{id}', [BrandAdminController::class, 'destroy']);
+
+    // Product
     Route::get('/products/all', [ProductAdminController::class, 'index']);
     Route::post('/products/store', [ProductAdminController::class, 'store']);
+    Route::post('/products/destroy/{id}', [ProductAdminController::class, 'destroy']);
+    // Categories
     Route::get('/categories/all', [CategoryAdminController::class, 'index']);
     Route::post('/categories/store', [CategoryAdminController::class, 'store']);
     Route::get('/categories/show/{id}', [CategoryAdminController::class, 'show']);
     Route::put('/categories/update/{id}', [CategoryAdminController::class, 'update']);
+    // User
     Route::get('/users', [AdminController::class, 'getAllUsers']);
 });

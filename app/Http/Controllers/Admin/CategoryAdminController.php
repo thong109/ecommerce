@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class CategoryAdminController extends Controller
 {
@@ -144,6 +145,7 @@ class CategoryAdminController extends Controller
 
             // Cập nhật ảnh nếu có
             if ($request->hasFile('image')) {
+                Storage::disk('public')->delete($category->image); // Xóa ảnh category cũ nếu cập nhật ảnh mới
                 $image = $request->file('image');
                 $path = $image->store('categories', 'public');
                 $category->image = $path;

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class ProductAdminController extends Controller
 {
@@ -162,6 +163,23 @@ class ProductAdminController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $product = Product::with('product_attribute_values')->find($id);
+
+        if (!$product) {
+            return response()->json(['message' => 'Product not found'], 404);
+        }
+
+        // Xoá ảnh sản phẩm
+        if ($product->image && Storage::disk('public')->exists($product->image)) {
+            Storage::disk('public')->delete($product->image);
+        }
+
+        // Xoá thuộc tính trước
+        $product->product_attribute_values()->delete();
+
+        // Xoá sản phẩm
+        $product->delete();
+
+        return response()->json(['message' => 'Product and attributes deleted']);
     }
 }

@@ -2,69 +2,78 @@
 
 namespace App\Http\Controllers;
 
+use App\Commons\CodeMasters\Status;
 use App\Models\Cart;
+use App\Models\CartItem;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class CartController extends Controller
 {
     public function addToCart(Request $request)
     {
         $carts = $request->all();
+
         $user = $request->user();
 
         if (!$user) {
-            return response()->json(['message' => 'Authentication required.'], 404);
+            return response()->json(['message' => 'Authentication required.'], 401);
         }
 
-        $cart = Cart::firstOrCreate(
-            ['user_id' => $user->id],
-        );
+        $cart = Cart::firstOrCreate([
+            'user_id' => $user->id,
+        ]);
 
         foreach ($carts as $item) {
-            $productId = $item['product']['id'];
-            $newAttrs = $item['attrs'];
+            $productId = $item['id'];
+            $attrsWithQty = $item['selectedAttributes'];
+            $qty = $item['qty'];
 
-            // Tìm cart item cho product này
-            $cartItem = $cart->items()->where('product_id', $productId)->first();
+            $attrsToCompare = $attrsWithQty;
 
-            if (!$cartItem) {
-                // Nếu chưa có -> tạo mới
+            $existingItem = $cart->items->first(function ($cartItem) use ($productId, $attrsToCompare) {
+                $itemAttrs = $cartItem->attributes;
+                return $cartItem->product_id == $productId && $itemAttrs == $attrsToCompare;
+            });
+
+            if ($existingItem) {
+                $existingQty = $existingItem->qty ?? 0;
+                $existingItem->qty = $existingQty + (int) $qty;
+
+                $existingItem->save();
+            } else {
                 $cart->items()->create([
                     'product_id' => $productId,
-                    'attributes' => $newAttrs,
+                    'attributes' => $attrsWithQty,
+                    'qty' => $qty
                 ]);
-            } else {
-                // Nếu đã có -> merge đúng product
-                $existingAttrs = $cartItem->attributes ?? [];
-
-                foreach ($newAttrs as $newAttr) {
-                    $newKey = $newAttr['productKey'] ?? null;
-                    if (!$newKey) continue;
-
-                    $matched = false;
-
-                    foreach ($existingAttrs as &$existAttr) {
-                        if (($existAttr['productKey'] ?? null) === $newKey) {
-                            // Nếu trùng key -> cộng quantity
-                            (int) $existAttr['quantity'] += (int) $newAttr['quantity'];
-                            $matched = true;
-                            break;
-                        }
-                    }
-
-                    unset($existAttr); // Xoá tham chiếu
-
-                    if (!$matched) {
-                        // Nếu không trùng -> thêm mới
-                        $existingAttrs[] = $newAttr;
-                    }
-                }
-
-                // Cập nhật lại giỏ hàng
-                $cartItem->update(['attributes' => $existingAttrs]);
             }
         }
 
-        return response()->json(['message' => 'Giỏ hàng đã được cập nhật.']);
+        return response()->json($cart);
+    }
+
+    public function getCartItems(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['message' => 'Authentication required.'], 401);
+        }
+
+        $cart = Cart::where('user_id', $user->id)->where('cart_status', Status::SHOW())->first();
+
+        // Lấy tất cả các item trong giỏ hàng
+        $cartItems = $cart->items->load('product');
+
+        // Trả về giỏ hàng dưới dạng JSON
+        return response()->json($cartItems);
+    }
+
+    public function deleteItemCart(string $id)
+    {
+        CartItem::where('id', $id)->delete();
+
+        return response()->json(['code' => 200]);
     }
 }
