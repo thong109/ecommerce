@@ -9,7 +9,7 @@ class CartItem extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['cart_id', 'product_id', 'attributes', 'qty'];
+    protected $fillable = ['cart_id', 'product_id', 'attributes', 'qty', 'price'];
 
     protected $casts = [
         'attributes' => 'array', // tự động decode/encode JSON

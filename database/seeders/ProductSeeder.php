@@ -21,7 +21,6 @@ class ProductSeeder extends Seeder
                 'name' => $faker->name,
                 'price' => rand(5000, 10000),
                 'cost' => rand(1000, 4999),
-                'discounted' => rand(0, 10),
                 'image' => 'https://picsum.photos/150/150?random=' . $i,
                 'rating' => round(rand(0, 50) / 10, 1),
                 'category_id' => rand(1, 5),

@@ -17,7 +17,6 @@ class Product extends Model
         'status',
         'short_desc',
         'description',
-        'discounted',
         'tag',
         'cost',
         'category_id',

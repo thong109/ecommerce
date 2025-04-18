@@ -46,6 +46,7 @@ class CategoryAdminController extends Controller
             [
                 'name.required' => 'Tên danh mục không được để trống.',
                 'name.max' => 'Tên danh mục không được vượt quá :max ký tự.',
+                'image.required' => 'Ảnh không được để trống',
                 'status.required' => 'Vui lòng chọn tình trạng hiển thị.',
                 'attributes.required' => 'Thuộc tính ko được để trống'
             ]

@@ -46,4 +46,11 @@ class User extends Authenticatable
     {
         return $this->hasMany(UserChangeRequest::class);
     }
+
+    public function coupons()
+    {
+        return $this->belongsToMany(Coupon::class)
+            ->withPivot('used_at')
+            ->withTimestamps();
+    }
 }

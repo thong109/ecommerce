@@ -28,6 +28,7 @@ class CartController extends Controller
             $productId = $item['id'];
             $attrsWithQty = $item['selectedAttributes'];
             $qty = $item['qty'];
+            $price = $item['price'];
 
             $attrsToCompare = $attrsWithQty;
 
@@ -39,13 +40,15 @@ class CartController extends Controller
             if ($existingItem) {
                 $existingQty = $existingItem->qty ?? 0;
                 $existingItem->qty = $existingQty + (int) $qty;
+                $existingItem->price = $existingItem->price + $price * (int) $qty;
 
                 $existingItem->save();
             } else {
                 $cart->items()->create([
                     'product_id' => $productId,
                     'attributes' => $attrsWithQty,
-                    'qty' => $qty
+                    'qty' => $qty,
+                    'price' => $price * $qty
                 ]);
             }
         }
@@ -75,5 +78,38 @@ class CartController extends Controller
         CartItem::where('id', $id)->delete();
 
         return response()->json(['code' => 200]);
+    }
+
+    public function checkout(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'address' => 'required|max:255',
+            'email' => 'required|email',
+            'phone' => ['required', 'regex:/^(0[3|5|7|8|9])+([0-9]{8})$/'],
+            'paymentMethod' => 'required'
+        ], [
+            'name.required' => 'Tên không được để trống.',
+            'address.required' => 'Địa chỉ không được để trống.',
+            'email.required' => 'Email không được để trống.',
+            'phone.required' => 'Số diện thoại không được để trống.',
+            'paymentMethod.required' => 'Phương thức thanh toán không được để trống.',
+            'email.email' => 'Email không đúng định dạng.',
+            'phone.regex' => 'Số điện thoại không đúng định dạng'
+        ]);
+
+        $rawItems = $request['cartItems'];
+        $discounted = json_decode($request['discounted']) ?? null;
+        $cartItem = array_map(function ($item) {
+            return json_decode($item);
+        }, $rawItems);
+
+        return response()->json([
+            'code' => 200,
+            'data' => $request->all(),
+            'carts' => $cartItem,
+            '2l' => $discounted,
+            'l' => $discounted->valid ? $discounted->discount : ''
+        ]);
     }
 }

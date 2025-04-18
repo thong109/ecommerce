@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreProductRequest;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -46,7 +47,6 @@ class ProductAdminController extends Controller
                 'id' => $product->id,
                 'name' => $product->name,
                 'price' => $product->price,
-                'discounted' => $product->discounted,
                 'cost' => $product->cost,
                 'image' => $product->image,
                 'attributes' => $attributeMap,
@@ -71,18 +71,38 @@ class ProductAdminController extends Controller
      */
     public function store(Request $request)
     {
+        // return response()->json($request->all());
         $request->validate([
-            'name' => 'required|string|max:255',
-            'quantity' => 'required|integer',
+            'name' => 'required|string|max:255|unique:products,name',
+            'quantity' => 'required|numeric',
             'status' => 'required|in:0,1',
             'price' => 'required|numeric',
-            'cost' => 'nullable|numeric',
-            'discounted' => 'nullable|numeric',
-            'tag' => 'nullable|string|max:255',
-            'category_id' => 'required',
-            'image' => 'image|max:5120',
+            'cost' => 'required|numeric|lt:price',
+            'tag' => 'required|string|max:255',
+            'category_id' => 'required|integer|exists:categories,id',
+            'brand_id' => 'required|integer|exists:brands,id',
+            'image' => 'required|image|max:5120',
             'short_desc' => 'required',
             'description' => 'required',
+            'attributes' => 'required'
+        ], [
+            'name.required' => 'Tên không được để trống.',
+            'quantity.required' => 'Số lượng không được để trống.',
+            'status.required' => 'Tình trạng không được để trống.',
+            'attributes.required' => 'Thuộc tính không được để trống.',
+            'price.required' => 'Giá bán không được để trống.',
+            'cost.required' => 'Giá vón không được để trống.',
+            'tag.required' => 'Thẻ tag không được để trống.',
+            'category_id.required' => 'Danh mục được để trống.',
+            'brand_id.required' => 'Thương hiệu không được để trống.',
+            'image.required' => 'Ảnh không được để trống.',
+            'short_desc.required' => 'Mô tả ngắn không được để trống.',
+            'description.required' => 'Mô tả không được để trống.',
+            'cost.lt' => 'Giá vốn phải nhỏ hơn giá bán.',
+            'price.numeric' => 'Giá bán nên là số.',
+            'quantity.numeric' => 'Số lượng nên là số.',
+            'cost.numeric' => 'Giá vốn nên là số.',
+            'name.unique' => 'Tên sản phẩm đã tồn tại.',
         ]);
 
         // 1. Lưu sản phẩm
@@ -93,7 +113,6 @@ class ProductAdminController extends Controller
             'status',
             'price',
             'cost',
-            'discounted',
             'tag',
             'category_id',
             'brand_id',
@@ -180,6 +199,6 @@ class ProductAdminController extends Controller
         // Xoá sản phẩm
         $product->delete();
 
-        return response()->json(['message' => 'Product and attributes deleted']);
+        return response()->json(['message' => 'Sản phẩm đã được xóa.']);
     }
 }

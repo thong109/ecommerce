@@ -22,7 +22,6 @@ return new class extends Migration
             $table->text('description');
             $table->string('cost');
             $table->integer('price');
-            $table->string('discounted');
             $table->string('image');
             $table->integer('rating')->default(0);
             $table->string('tag');

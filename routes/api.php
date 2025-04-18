@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\BrandAdminController;
 use App\Http\Controllers\Admin\CategoryAdminController;
+use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\ProductAdminController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CartController;
@@ -36,11 +37,13 @@ Route::get('/categories/{category}/attributes', [CategoryController::class, 'get
 Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::post('/logout', [LoginController::class, 'logout']);
 
+    // Cart
     Route::post('/user/update/{id}', [UserController::class, 'update']);
     Route::get('/user', [UserController::class, 'me']);
     Route::post('/add-to-cart', [CartController::class, 'addToCart']);
     Route::get('/carts/get/', [CartController::class, 'getCartItems']);
     Route::delete('/carts/delete/{id}', [CartController::class, 'deleteItemCart']);
+    Route::post('/checkout', [CartController::class, 'checkout']);
 
     // --------Admin--------
 
@@ -62,4 +65,7 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::put('/categories/update/{id}', [CategoryAdminController::class, 'update']);
     // User
     Route::get('/users', [AdminController::class, 'getAllUsers']);
+
+    // Coupon
+    Route::post('/check-coupon', [CouponController::class, 'validateCouponForUser']);
 });
