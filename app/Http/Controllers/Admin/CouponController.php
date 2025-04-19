@@ -39,6 +39,7 @@ class CouponController extends Controller
             'valid' => true,
             'discount' => $discount,
             'type' => $coupon->type,
+            'coupon_id' => $coupon->id,
             'message' => 'Sử dụng mã thành công.'
         ]);
     }

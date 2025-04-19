@@ -14,4 +14,8 @@ class CouponUser extends Model
         'user_id',
         'used_at',
     ];
+
+    protected $casts = [
+        'used_at' => 'datetime',
+    ];
 }

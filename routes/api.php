@@ -11,6 +11,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\WishlistController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -65,6 +66,11 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     Route::put('/categories/update/{id}', [CategoryAdminController::class, 'update']);
     // User
     Route::get('/users', [AdminController::class, 'getAllUsers']);
+
+    // Wishlist
+    Route::get('/wishlists', [WishlistController::class, 'index']);
+    Route::post('/wishlist', [WishlistController::class, 'store']);
+    Route::delete('/wishlist/{id}', [WishlistController::class, 'destroy']);
 
     // Coupon
     Route::post('/check-coupon', [CouponController::class, 'validateCouponForUser']);

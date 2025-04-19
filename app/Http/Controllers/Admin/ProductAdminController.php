@@ -91,7 +91,7 @@ class ProductAdminController extends Controller
             'status.required' => 'Tình trạng không được để trống.',
             'attributes.required' => 'Thuộc tính không được để trống.',
             'price.required' => 'Giá bán không được để trống.',
-            'cost.required' => 'Giá vón không được để trống.',
+            'cost.required' => 'Giá vốn không được để trống.',
             'tag.required' => 'Thẻ tag không được để trống.',
             'category_id.required' => 'Danh mục được để trống.',
             'brand_id.required' => 'Thương hiệu không được để trống.',

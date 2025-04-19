@@ -2,10 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Commons\CodeMasters\CouponStatus;
+use App\Commons\CodeMasters\OrderStatus;
 use App\Commons\CodeMasters\Status;
 use App\Models\Cart;
 use App\Models\CartItem;
+use App\Models\Coupon;
+use App\Models\CouponUser;
+use App\Models\Order;
+use App\Models\OrderDetail;
+use App\Models\Shipping;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class CartController extends Controller
@@ -67,7 +76,7 @@ class CartController extends Controller
         $cart = Cart::where('user_id', $user->id)->where('cart_status', Status::SHOW())->first();
 
         // Lấy tất cả các item trong giỏ hàng
-        $cartItems = $cart->items->load('product');
+        $cartItems = $cart?->items->load('product') ?? [];
 
         // Trả về giỏ hàng dưới dạng JSON
         return response()->json($cartItems);
@@ -104,12 +113,58 @@ class CartController extends Controller
             return json_decode($item);
         }, $rawItems);
 
+        if (!empty($discounted)) {
+            $couponUser = DB::table('coupon_user')->insert([
+                'coupon_id' => $discounted->coupon_id,
+                'user_id' => $request->user()->id,
+                'used_at' => now('Asia/Ho_Chi_Minh')->timestamp,
+                'status' => CouponStatus::USED->value,
+            ]);
+
+            if ($couponUser) {
+                $coupon = Coupon::where('id', $discounted->coupon_id)->first();
+                $coupon->update([
+                    'used' => $coupon->used += 1
+                ]);
+            }
+        }
+
+        $shipping = [
+            'shipping_name' => $request['name'],
+            'shipping_address' => $request['address'],
+            'shipping_phone' => $request['phone'],
+            'shipping_email' => $request['email'],
+        ];
+
+        $orders = Order::create([
+            'user_id' => $request->user()->id,
+            'shipping_id' => DB::table('shippings')->insertGetId($shipping),
+            'payment_id' => $request['paymentMethod'],
+            'order_total' => collect($cartItem)->sum('qty'),
+            'order_discount' => $discounted?->discount ?? null,
+            'order_discount_type' => $discounted?->type ?? null,
+            'note' => $request['note'],
+            'order_status' => OrderStatus::PROCESSING,
+        ]);
+
+        foreach ($cartItem as $value) {
+            $orders->order_details()->create([
+                'order_id' => $orders->id,
+                'product_id' => $value->product_id,
+                'product_name' => $value->product->name,
+                'product_price' => $value->price,
+                'product_sales_quantity' => $value->qty,
+                'attributes' => $value->attributes,
+            ]);
+            // return response()->json($value->attributes);
+        }
+
+        $cart = Cart::where('user_id',$request->user()->id)->first();
+        $cart->items()->delete();
+        $cart->delete();
+
         return response()->json([
             'code' => 200,
-            'data' => $request->all(),
-            'carts' => $cartItem,
-            '2l' => $discounted,
-            'l' => $discounted->valid ? $discounted->discount : ''
         ]);
     }
 }
