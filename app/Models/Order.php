@@ -22,7 +22,7 @@ class Order extends Model
 
     public function shipping()
     {
-        return $this->hasOne(Shipping::class);
+        return $this->hasOne(Shipping::class, 'id', 'shipping_id');
     }
 
     public function order_details()

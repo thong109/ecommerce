@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\BrandAdminController;
 use App\Http\Controllers\Admin\CategoryAdminController;
 use App\Http\Controllers\Admin\CouponController;
+use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\ProductAdminController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CartController;
@@ -75,4 +76,9 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
     // Coupon
     Route::post('/check-coupon', [CouponController::class, 'validateCouponForUser']);
+
+    // Order
+    Route::get('/order/all', [OrderController::class, 'index']);
+    Route::get('/order/show/{id}', [OrderController::class, 'show']);
+    Route::post('/order/update', [OrderController::class, 'update']);
 });
