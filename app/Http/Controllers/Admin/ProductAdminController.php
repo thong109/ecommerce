@@ -52,6 +52,7 @@ class ProductAdminController extends Controller
                 'attributes' => $attributeMap,
                 'categoryName' => $product->category->name,
                 'brandName' => $product->brand->name,
+                'quantity' => $product->quantity
             ];
         }
 

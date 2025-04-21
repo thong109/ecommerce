@@ -159,12 +159,65 @@ class CartController extends Controller
             // return response()->json($value->attributes);
         }
 
-        $cart = Cart::where('user_id',$request->user()->id)->first();
+        $cart = Cart::where('user_id', $request->user()->id)->first();
         $cart->items()->delete();
         $cart->delete();
 
         return response()->json([
             'code' => 200,
+        ]);
+    }
+
+    public function checkCart(Request $request)
+    {
+        $userId = auth()->id();
+
+        $cart = Cart::where('user_id', $userId)
+            ->where('cart_status', Status::SHOW())
+            ->with('items.product') // tránh N+1 query
+            ->first();
+
+        if (!$cart) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Không có giỏ hàng hoạt động'
+            ], 404);
+        }
+
+        $invalidItems = [];
+
+        foreach ($cart->items as $item) {
+            $product = $item->product;
+
+            if (!$product) {
+                $invalidItems[] = [
+                    'product_id' => $item->product_id,
+                    'message' => 'Sản phẩm không tồn tại'
+                ];
+            } elseif ($product->status == Status::HIDDEN()) {
+                $invalidItems[] = [
+                    'product_id' => $product->id,
+                    'message' => 'Sản phẩm đã ngừng kinh doanh'
+                ];
+            } elseif ($item->qty > $product->quantity) {
+                $invalidItems[] = [
+                    'product_id' => $product->id,
+                    'message' => "Chỉ còn lại {$product->quantity} sản phẩm trong kho"
+                ];
+            }
+        }
+
+        if (count($invalidItems)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Một số sản phẩm trong giỏ không hợp lệ',
+                'invalid_items' => $invalidItems
+            ], 422);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Giỏ hàng hợp lệ'
         ]);
     }
 }
