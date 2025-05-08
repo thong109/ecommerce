@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class CartController extends Controller
 {
@@ -91,81 +92,99 @@ class CartController extends Controller
 
     public function checkout(Request $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'address' => 'required|max:255',
-            'email' => 'required|email',
-            'phone' => ['required', 'regex:/^(0[3|5|7|8|9])+([0-9]{8})$/'],
-            'paymentMethod' => 'required'
-        ], [
-            'name.required' => 'Tên không được để trống.',
-            'address.required' => 'Địa chỉ không được để trống.',
-            'email.required' => 'Email không được để trống.',
-            'phone.required' => 'Số diện thoại không được để trống.',
-            'paymentMethod.required' => 'Phương thức thanh toán không được để trống.',
-            'email.email' => 'Email không đúng định dạng.',
-            'phone.regex' => 'Số điện thoại không đúng định dạng'
-        ]);
-
-        $rawItems = $request['cartItems'];
-        $discounted = json_decode($request['discounted']) ?? null;
-        $cartItem = array_map(function ($item) {
-            return json_decode($item);
-        }, $rawItems);
-
-        if (!empty($discounted)) {
-            $couponUser = DB::table('coupon_user')->insert([
-                'coupon_id' => $discounted->coupon_id,
-                'user_id' => $request->user()->id,
-                'used_at' => now('Asia/Ho_Chi_Minh')->timestamp,
-                'status' => CouponStatus::USED->value,
+        try {
+            $request->validate([
+                'name' => 'required|string|max:255',
+                'address' => 'required|max:255',
+                'email' => 'required|email',
+                'phone' => ['required', 'regex:/^(0[3|5|7|8|9])+([0-9]{8})$/'],
+                'paymentMethod' => 'required'
+            ], [
+                'name.required' => 'Tên không được để trống.',
+                'address.required' => 'Địa chỉ không được để trống.',
+                'email.required' => 'Email không được để trống.',
+                'phone.required' => 'Số diện thoại không được để trống.',
+                'paymentMethod.required' => 'Phương thức thanh toán không được để trống.',
+                'email.email' => 'Email không đúng định dạng.',
+                'phone.regex' => 'Số điện thoại không đúng định dạng'
             ]);
 
-            if ($couponUser) {
-                $coupon = Coupon::where('id', $discounted->coupon_id)->first();
-                $coupon->update([
-                    'used' => $coupon->used += 1
+            $rawItems = $request['cartItems'];
+            $discounted = json_decode($request['discounted']) ?? null;
+            $cartItems = array_map(function ($item) {
+                return json_decode($item);
+            }, $rawItems);
+
+            DB::transaction(function () use ($request, $cartItems, $discounted) {
+
+                if (!empty($discounted)) {
+                    DB::table('coupon_user')->insert([
+                        'coupon_id' => $discounted->coupon_id,
+                        'user_id' => $request->user()->id,
+                        'used_at' => now('Asia/Ho_Chi_Minh')->timestamp,
+                        'status' => CouponStatus::USED->value,
+                    ]);
+
+                    $coupon = Coupon::where('id', $discounted->coupon_id)->first();
+                    $coupon->update([
+                        'used' => $coupon->used + 1
+                    ]);
+                }
+
+                $shipping = [
+                    'shipping_name' => $request['name'],
+                    'shipping_address' => $request['address'],
+                    'shipping_phone' => $request['phone'],
+                    'shipping_email' => $request['email'],
+                ];
+
+                $shippingId = DB::table('shippings')->insertGetId($shipping);
+
+                $order = Order::create([
+                    'user_id' => $request->user()->id,
+                    'shipping_id' => $shippingId,
+                    'payment_id' => $request['paymentMethod'],
+                    'order_total' => collect($cartItems)->sum('qty'),
+                    'order_discount' => $discounted?->discount ?? null,
+                    'order_discount_type' => $discounted?->type ?? null,
+                    'note' => $request['note'],
+                    'order_status' => OrderStatus::PROCESSING,
                 ]);
-            }
-        }
 
-        $shipping = [
-            'shipping_name' => $request['name'],
-            'shipping_address' => $request['address'],
-            'shipping_phone' => $request['phone'],
-            'shipping_email' => $request['email'],
-        ];
+                foreach ($cartItems as $item) {
+                    $order->order_details()->create([
+                        'order_id' => $order->id,
+                        'product_id' => $item->product_id,
+                        'product_name' => $item->product->name,
+                        'product_price' => $item->price,
+                        'product_sales_quantity' => $item->qty,
+                        'attributes' => $item->attributes,
+                    ]);
+                }
 
-        $orders = Order::create([
-            'user_id' => $request->user()->id,
-            'shipping_id' => DB::table('shippings')->insertGetId($shipping),
-            'payment_id' => $request['paymentMethod'],
-            'order_total' => collect($cartItem)->sum('qty'),
-            'order_discount' => $discounted?->discount ?? null,
-            'order_discount_type' => $discounted?->type ?? null,
-            'note' => $request['note'],
-            'order_status' => OrderStatus::PROCESSING,
-        ]);
+                $cart = Cart::where('user_id', $request->user()->id)->first();
+                if ($cart) {
+                    $cart->items()->delete();
+                    $cart->delete();
+                }
+            });
 
-        foreach ($cartItem as $value) {
-            $orders->order_details()->create([
-                'order_id' => $orders->id,
-                'product_id' => $value->product_id,
-                'product_name' => $value->product->name,
-                'product_price' => $value->price,
-                'product_sales_quantity' => $value->qty,
-                'attributes' => $value->attributes,
+            return response()->json([
+                'code' => 200,
+                'message' => 'Thanh toán thành công!'
             ]);
-            // return response()->json($value->attributes);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'code' => 422,
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'code' => 500,
+                'message' => 'Đã xảy ra lỗi trong quá trình thanh toán.',
+                'error' => $e
+            ]);
         }
-
-        $cart = Cart::where('user_id', $request->user()->id)->first();
-        $cart->items()->delete();
-        $cart->delete();
-
-        return response()->json([
-            'code' => 200,
-        ]);
     }
 
     public function checkCart(Request $request)

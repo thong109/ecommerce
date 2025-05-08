@@ -2,12 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Commons\CodeMasters\OrderStatus;
+use App\Commons\CodeMasters\PaymentMethod;
 use App\Commons\CodeMasters\Role;
 use App\Commons\CodeMasters\Status;
+use App\Http\Resources\OrderResource;
+use App\Models\Order;
 use App\Models\User;
 use App\Models\UserChangeRequest;
 use App\Models\UserInfo;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
@@ -87,19 +92,15 @@ class UserController extends Controller
 
         $user = User::findOrFail($id);
 
-        // Cập nhật các trường cơ bản
-        $user->name = $request->input('name');
-        $user->save();
-
         // Cập nhật thông tin user_info
         $userInfo = $user->user_info;
-        $userInfo->user_id = $user->id;
-        $userInfo->phone = $request->input('user_info.phone');
-        $userInfo->address = $request->input('user_info.address');
-        $userInfo->location = $request->input('user_info.location');
-        $userInfo->description = $request->input('user_info.description');
 
         if ($request->hasFile('user_info.avatar')) {
+            $request->validate([
+                'image' => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048'
+            ], [
+                'image.mimes' => 'File không đúng định dạng'
+            ]);
             // Trường hợp gửi dạng file qua FormData
             $file = $request->file('user_info.avatar');
             $path = $file->store('avatars', 'public');
@@ -122,25 +123,53 @@ class UserController extends Controller
             ]);
 
             return response()->json([
-                'message' => 'Your photo will be updated within minutes if approved by ADM',
-                'user' => $user->load('user_info')
+                'message' => 'Ảnh của bạn đã được thay đổi.',
+                'code' => 200
             ]);
         }
 
+        $request->validate([
+            'name' => 'required',
+            'user_info.phone' => ['regex:/^(0[3|5|7|8|9])+([0-9]{8})$/', Rule::unique('user_infos', 'phone')->ignore($userInfo->id),],
+        ], [
+            'name.required' => 'Tên không được để trống',
+            'user_info.phone.regex' => 'Số điện thoại không đúng định dạng',
+            'user_info.phone.unique' => 'Số điện đã được sử dụng'
+        ]);
+
+        // Cập nhật các trường cơ bản
+        $user->name = $request->input('name');
+        $user->save();
+        $userInfo->phone = $request->input('user_info.phone');
+        $userInfo->address = $request->input('user_info.address');
+        $userInfo->description = $request->input('user_info.description');
         $userInfo->save();
 
         return response()->json([
-            'message' => 'User updated successfully.',
-            'user' => $user->load('user_info')
+            'code' => 200,
+            'message' => 'Cập nhật thông tin thành công',
+            'user' => $user->load('user_info'),
         ]);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Request $request)
     {
-        //
+        $ids = $request->input('ids');
+
+        foreach ($ids as $id) {
+            $user = User::with('user_info')->find($id);
+
+            if ($user) {
+                // Xoá thuộc tính trước
+                $user->user_info()->delete();
+                $user->delete();
+            }
+        }
+
+        return response()->json(['message' => 'Xóa thành công.', 'code' => 200]);
     }
 
     private function saveBase64Image($image)
@@ -175,5 +204,54 @@ class UserController extends Controller
         if (!$userCurrent) {
             return response()->json(['message' => 'Authentication.'], 404);
         }
+    }
+
+    public function userBuy(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['message' => 'Chưa xác thực người dùng.'], 401);
+        }
+
+        $orders = Order::with('order_details.product')
+            ->where('user_id', $user->id)
+            ->latest()
+            ->get();
+
+        return OrderResource::collection($orders);
+    }
+
+    public function orderDetail(Request $request, string $id)
+    {
+        $userCurrent = $request->user();
+
+        if (!$userCurrent) {
+            return response()->json(['message' => 'Authentication failed.'], 401);
+        }
+
+        if (!$id) {
+            return response()->json(['message' => 'Invalid order ID.'], 400);
+        }
+
+        $order = Order::with([
+            'shipping',
+            'order_details'
+        ])->where('id', $id)->where('user_id', $userCurrent->id)->first();
+
+        if (!$order) {
+            return response()->json(['message' => 'Order not found.'], 404);
+        }
+
+        $order->payment_method = PaymentMethod::from($order->payment_id)->label();
+
+        $order->order_status_enum = OrderStatus::from($order->order_status);
+        $order->order_status_label = $order->order_status_enum->label();
+
+        foreach ($order->order_details as $detail) {
+            $detail->product_image = $detail->product->image ?? null;
+        }
+
+        return response()->json($order);
     }
 }

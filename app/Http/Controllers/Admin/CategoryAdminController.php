@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Commons\CodeMasters\Status;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -13,10 +15,15 @@ class CategoryAdminController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $categories = Category::all();
+        $query = Category::query();
 
+        if ($request['attr'] === 'blockCategory') {
+            $query->onlyTrashed();
+        }
+
+        $categories = $query->get();
         return response()->json($categories);
     }
 
@@ -182,8 +189,77 @@ class CategoryAdminController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Request $request)
     {
-        //
+        $ids = $request->input('ids');
+
+        $blocked = [];
+        foreach ($ids as $id) {
+            $category = Category::with('attributes')->find($id);
+
+            $checkProduct = Product::where('category_id', $id)->get();
+            if ($checkProduct->count() > 0) {
+                $blocked[] = $category->name;
+                continue;
+            }
+
+            $category->attributes()->delete();
+            $category->delete();
+        }
+
+        if (!empty($blocked)) {
+            return response()->json([
+                'blocked' => $blocked,
+                'code' => 422
+            ]);
+        }
+
+        return response()->json(['message' => 'Xóa thành công.', 'code' => 200]);
+    }
+
+    public function restore(Request $request)
+    {
+        $ids = $request->input('ids');
+
+        foreach ($ids as $id) {
+            $category = Category::withTrashed()->with(['attributes' => function ($q) {
+                $q->withTrashed();
+            }])->find($id);
+
+            if ($category && $category->trashed()) {
+                // Khôi phục sản phẩm
+                $category->restore();
+
+                // Khôi phục các attribute values nếu có
+                foreach ($category->attributes as $attrValue) {
+                    if ($attrValue->trashed()) {
+                        $attrValue->restore();
+                    }
+                }
+            }
+        }
+
+        return response()->json(['message' => 'Khôi phục thành công', 'code' => 200]);
+    }
+
+    public function changeStatus(string $id)
+    {
+        $category = Category::find($id);
+
+        if (!$category) {
+            return response()->json([
+                'code' => 422,
+                'message' => 'Không tồn tại danh mục.'
+            ]);
+        }
+
+        $category->update([
+            'status' => $category->status === Status::HIDDEN() ? Status::SHOW() : Status::HIDDEN()
+        ]);
+
+        return response()->json([
+            'code' => 200,
+            'message' => 'Thay đổi trạng thái thành công.'
+        ]);
     }
 }

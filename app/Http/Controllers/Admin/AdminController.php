@@ -3,9 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Commons\CodeMasters\Role;
+use App\Console\Commands\CrawlPdfPages;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
+use Spatie\Browsershot\Browsershot;
 
 class AdminController extends Controller
 {
@@ -60,10 +64,7 @@ class AdminController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
-    {
-        //
-    }
+    public function destroy(Request $request) {}
 
     public function getAllUsers()
     {
@@ -72,5 +73,16 @@ class AdminController extends Controller
         return response()->json([
             'users' => $users->load('user_info'),
         ]);
+    }
+
+    public function crawl(Request $request)
+    {
+        $url = $request->input('url');
+
+        // $url = 'http://seibunsya.sphinx-net.jp/webcatalog/hoiku2025/html5print.html?start=' . $start . '&end=' . $end . '&bookpath=.%2F&imagepath=.%2F&tegaki=on';
+        $handler = new CrawlPdfPages();
+        $handler->handle($url); // Truyền URL và đường dẫn vào đây
+
+        return response()->json(['message' => 'Đang xử lý tải PDF...']);
     }
 }

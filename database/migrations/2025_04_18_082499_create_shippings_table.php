@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('shipping_phone');
             $table->string('shipping_email');
             // $table->boolean('is_default')->default(false);
+            $table->softDeletes();
             $table->timestamps();
         });
     }

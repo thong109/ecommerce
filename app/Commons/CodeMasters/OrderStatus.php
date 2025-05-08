@@ -7,8 +7,9 @@ enum OrderStatus: int
   case PENDING = 0;
   case PROCESSING = 1;
   case SHIPPED = 2;
-  case DELIVERED = 3;
-  case CANCELLED = 4;
+  case CONFIRMED = 3;
+  case DELIVERED = 4;
+  case CANCELLED = 5;
 
   public function label(): string
   {
@@ -18,6 +19,7 @@ enum OrderStatus: int
       self::SHIPPED => __('Đang giao hàng'),
       self::DELIVERED => __('Đã giao'),
       self::CANCELLED => __('Đã hủy đơn'),
+      self::CONFIRMED => __('Đã xác nhận'),
     };
   }
 }

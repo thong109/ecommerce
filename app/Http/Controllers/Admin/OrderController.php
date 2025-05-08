@@ -117,6 +117,7 @@ class OrderController extends Controller
 
                         // Trừ số lượng tồn kho
                         $product->quantity -= $detail->product_sales_quantity;
+                        $product->sold = $product->sold + $detail->product_sales_quantity;
                         $product->save();
                     }
                 }
@@ -135,8 +136,6 @@ class OrderController extends Controller
                 DB::commit();
                 return response()->json([
                     'message' => 'Cập nhật đơn hàng & trừ hàng thành công',
-                    'order' => $order,
-                    'status' => $request->order_status
                 ]);
             } catch (\Exception $e) {
                 DB::rollBack();
@@ -150,8 +149,6 @@ class OrderController extends Controller
 
         return response()->json([
             'message' => 'Cập nhật đơn hàng thành công',
-            'order' => $order,
-            'status' => $request->order_status
         ], 200);
     }
 

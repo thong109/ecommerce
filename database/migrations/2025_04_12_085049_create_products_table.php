@@ -27,6 +27,8 @@ return new class extends Migration
             $table->string('tag');
             $table->integer('quantity');
             $table->tinyInteger('status')->default(1);
+            $table->string('sold')->default(0); // Thêm cột deleted_at
+            $table->softDeletes();
             $table->timestamps();
         });
     }

@@ -12,6 +12,7 @@ class VerifyCsrfToken extends Middleware
      * @var array<int, string>
      */
     protected $except = [
-        //
+        'api/*',  // Nếu bạn không muốn kiểm tra CSRF cho tất cả API, có thể thêm api/* vào đây
+        'sanctum/csrf-cookie',
     ];
 }

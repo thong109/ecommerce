@@ -21,8 +21,8 @@ class CouponSeeder extends Seeder
                 'value' => 20000,
                 'usage_limit' => 50,
                 'used' => 0,
-                'start_date' => gmdate('Y-m-d', strtotime('2025-04-01')),
-                'end_date' => gmdate('Y-m-d', strtotime('2025-04-30')),
+                'start_date' => gmdate('Y-m-d', strtotime('2026-04-01')),
+                'end_date' => gmdate('Y-m-d', strtotime('2026-04-30')),
                 'active' => 1
             ]);
         }

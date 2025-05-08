@@ -16,10 +16,16 @@ class BrandAdminController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $brand = Brand::where('status', Status::SHOW())->get();
-        return response()->json($brand);
+        $query = Brand::query();
+
+        if ($request['attr'] === 'blockBrand') {
+            $query->onlyTrashed();
+        }
+
+        $brands = $query->get();
+        return response()->json($brands);
     }
 
     /**
@@ -92,7 +98,6 @@ class BrandAdminController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        return response()->json($request->all());
         $validated = $request->validate(
             [
                 'name' => 'required|string|max:255',
@@ -116,7 +121,7 @@ class BrandAdminController extends Controller
             if ($request->hasFile('image')) {
                 Storage::disk('public')->delete($brand->image); // Xóa ảnh brand cũ nếu cập nhật ảnh mới
                 $image = $request->file('image');
-                $path = $image->store('categories', 'public');
+                $path = $image->store('brand', 'public');
                 $brand->image = $path;
             }
 
@@ -132,31 +137,66 @@ class BrandAdminController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Request $request)
     {
-        try {
+        $ids = $request->input('ids');
+
+        $blocked = [];
+        foreach ($ids as $id) {
             $brand = Brand::find($id);
 
-            if (!$brand) {
-                return response()->json(['message' => 'Brand not found'], 404);
+            $checkProduct = Product::where('brand_id', $id)->get();
+            if ($checkProduct->count() > 0) {
+                $blocked[] = $brand->name;
+                continue;
             }
 
-            $checkBrandUsed = Product::where('brand_id', $id)->get()->count();
-            if ($checkBrandUsed > 0) {
-                return response()->json(['message' => 'Brand used'], 404);
-            }
-
-            // Xoá ảnh sản phẩm
-            if ($brand->image && Storage::disk('public')->exists($brand->image)) {
-                Storage::disk('public')->delete($brand->image);
-            }
-
-            // Xoá sản phẩm
             $brand->delete();
-
-            return response()->json(['message' => 'Product and attributes deleted']);
-        } catch (\Throwable $th) {
-            return response()->json(['message' => 'Cập nhật thương hiệu thất bại']);
         }
+
+        if (!empty($blocked)) {
+            return response()->json([
+                'blocked' => $blocked,
+                'code' => 422
+            ]);
+        }
+
+        return response()->json(['message' => 'Xóa thành công.', 'code' => 200]);
+    }
+
+    public function restore(Request $request)
+    {
+        $ids = $request->input('ids');
+
+        foreach ($ids as $id) {
+            $brand = Brand::withTrashed()->find($id);
+
+            if ($brand && $brand->trashed()) {
+                $brand->restore();
+            }
+        }
+
+        return response()->json(['message' => 'Khôi phục thành công', 'code' => 200]);
+    }
+
+    public function changeStatus(string $id)
+    {
+        $brand = Brand::find($id);
+
+        if (!$brand) {
+            return response()->json([
+                'code' => 422,
+                'message' => 'Không tồn tại thương hiệu.'
+            ]);
+        }
+
+        $brand->update([
+            'status' => $brand->status === Status::HIDDEN() ? Status::SHOW() : Status::HIDDEN()
+        ]);
+
+        return response()->json([
+            'code' => 200,
+            'message' => 'Thay đổi trạng thái thành công.'
+        ]);
     }
 }
